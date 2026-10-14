@@ -18,7 +18,7 @@ USAGE:
   HOST : bind address for WebSocket server (default: localhost)
   PORT : WebSocket port (default: 8765)
 
-  Then open 51tnc_config.html and set Bridge URL to ws://localhost:8765
+  Then open index.html and set Bridge URL to ws://localhost:8765
 """
 
 import asyncio
