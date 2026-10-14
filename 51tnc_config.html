@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>51TNC Config</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg:       #0d0f0e;
+    --panel:    #131916;
+    --border:   #1f2e25;
+    --accent:   #3ddc84;
+    --accent2:  #ffb347;
+    --dim:      #2a3d2e;
+    --text:     #c8d8c8;
+    --muted:    #5a7060;
+    --red:      #ff4c4c;
+    --blue:     #5ab4ff;
+    --purple:   #c084fc;
+    --input-bg: #0a100c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    min-height: 100vh;
+  }
+
+  /* ---- HEADER ---- */
+  #header {
+    background: var(--panel);
+    border-bottom: 2px solid var(--border);
+    padding: 8px 16px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  #header h1 {
+    font-family: 'Share Tech Mono', monospace; font-size: 17px;
+    color: var(--accent); letter-spacing: 2px; flex: 0 0 auto;
+    padding-right: 14px; border-right: 1px solid var(--dim);
+  }
+  .hrow { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  label.hlabel { font-size: 11px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
+  input.hinput {
+    background: var(--input-bg); border: 1px solid var(--dim); color: var(--text);
+    font-family: 'Share Tech Mono', monospace; font-size: 13px;
+    padding: 4px 8px; outline: none; border-radius: 2px; width: 155px;
+  }
+  input.hinput.short { width: 68px; }
+  input.hinput:focus { border-color: var(--accent); }
+
+  /* ---- IP HISTORY DROPDOWN ---- */
+  .ip-wrap { position: relative; display: inline-block; }
+  #ipDropdown {
+    display: none; position: absolute;
+    top: calc(100% + 3px); left: 0;
+    background: var(--panel); border: 1px solid var(--accent);
+    border-radius: 2px; min-width: 155px; z-index: 200;
+    box-shadow: 0 4px 14px rgba(0,0,0,.7);
+  }
+  #ipDropdown.open { display: block; }
+  .ipdrop-item {
+    padding: 5px 10px;
+    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    color: var(--text); cursor: pointer; white-space: nowrap;
+    border-bottom: 1px solid var(--dim);
+  }
+  .ipdrop-item:last-child { border-bottom: none; }
+  .ipdrop-item:hover { background: var(--dim); color: var(--accent); }
+
+  button {
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    border: 1px solid var(--dim); background: transparent; color: var(--text);
+    padding: 5px 12px; cursor: pointer; border-radius: 2px; transition: all .13s; white-space: nowrap;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button.primary { border-color: var(--accent); color: var(--accent); }
+  button.primary:hover { background: var(--accent); color: var(--bg); }
+  button.warning { border-color: var(--accent2); color: var(--accent2); }
+  button.warning:hover { background: var(--accent2); color: var(--bg); }
+  button.danger { border-color: var(--red); color: var(--red); }
+  button.danger:hover { background: var(--red); color: #fff; }
+  button:disabled { opacity: .3; cursor: default; pointer-events: none; }
+
+  #statusDot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--red); flex-shrink: 0; transition: background .3s;
+  }
+  #statusDot.connected { background: var(--accent); box-shadow: 0 0 7px var(--accent); }
+
+  /* ---- TABS ---- */
+  #tabs {
+    display: flex; background: var(--panel);
+    border-bottom: 2px solid var(--border); padding: 0 16px; gap: 2px;
+  }
+  .tab {
+    font-family: 'Share Tech Mono', monospace; font-size: 11px;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 10px 14px; cursor: pointer; color: var(--muted);
+    border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .13s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ---- CONTENT ---- */
+  #content { padding: 14px; max-width: 870px; padding-bottom: 46px; }
+  .tabpanel { display: none; }
+  .tabpanel.active { display: block; }
+
+  .section {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 3px; margin-bottom: 12px; overflow: hidden;
+  }
+  .section-title {
+    font-family: 'Share Tech Mono', monospace; font-size: 11px;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--accent);
+    padding: 7px 14px; background: rgba(61,220,132,.04); border-bottom: 1px solid var(--border);
+  }
+  .section-body { padding: 12px 14px; }
+
+  .field-row { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; flex-wrap: wrap; }
+  .field-row:last-child { margin-bottom: 0; }
+  .field-label { font-size: 12px; letter-spacing: .4px; color: var(--muted); min-width: 138px; flex-shrink: 0; }
+  .field-label.short { min-width: 80px; }
+  .field-label.mini  { min-width: 50px; }
+
+  input[type=text], input[type=number], select {
+    background: var(--input-bg); border: 1px solid var(--dim); color: var(--text);
+    font-family: 'Share Tech Mono', monospace; font-size: 13px;
+    padding: 4px 8px; outline: none; border-radius: 2px; transition: border-color .13s;
+  }
+  input[type=text]:focus, input[type=number]:focus, select:focus { border-color: var(--accent); }
+  input[type=text].wide   { width: 255px; }
+  input[type=text].medium { width: 155px; }
+  input[type=text].narrow { width: 88px; }
+  input[type=text].tiny   { width: 50px; }
+  input[type=text].ip-octet { width: 42px; text-align: center; }
+  input[type=number].num-field { width: 76px; }
+  input[type=number].num-small { width: 52px; }
+  select.sel-medium { width: 175px; }
+  select.sel-narrow { width: 118px; }
+
+  input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+  input[type=radio]    { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+
+  .char-count { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--muted); min-width: 26px; }
+  .char-count.warn { color: var(--accent2); }
+
+  .radio-group { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .radio-item  { display: flex; gap: 6px; align-items: center; cursor: pointer; font-size: 14px; }
+
+  .ip-block { display: flex; gap: 2px; align-items: center; }
+  .ip-sep { color: var(--muted); font-family: 'Share Tech Mono', monospace; }
+
+  /* ---- STATUS TAB ---- */
+  .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-item { background: var(--input-bg); border: 1px solid var(--dim); border-radius: 2px; padding: 9px 13px; }
+  .stat-label { font-size: 11px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; margin-bottom: 3px; }
+  .stat-value { font-family: 'Share Tech Mono', monospace; font-size: 19px; color: var(--accent); }
+  .stat-value.red   { color: var(--red); }
+  .stat-value.blue  { color: var(--blue); }
+  .stat-value.amber { color: var(--accent2); }
+  .stat-value.small { font-size: 13px; word-break: break-all; }
+
+  .aprs-preview {
+    font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--accent2);
+    background: var(--input-bg); border: 1px solid var(--dim);
+    padding: 5px 10px; border-radius: 2px; word-break: break-all; margin-top: 7px;
+  }
+
+  /* ---- MONITOR TAB ---- */
+  #tab-monitor { max-width: unset; }
+  #mon-toolbar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+  }
+  #mon-stream {
+    background: #060908;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    height: calc(100vh - 250px);
+    min-height: 300px;
+    overflow-y: auto;
+    padding: 6px 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    line-height: 1.65;
+  }
+  .mon-line {
+    display: flex; gap: 9px; align-items: baseline;
+    border-bottom: 1px solid rgba(31,46,37,.4);
+    padding: 1px 2px;
+    animation: fadein .12s ease;
+  }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .mon-ts    { color: var(--muted); flex-shrink: 0; font-size: 10px; width: 56px; }
+  .mon-dir   { flex-shrink: 0; font-size: 10px; width: 14px; text-align: center; }
+  .mon-dir.tx  { color: var(--accent2); }
+  .mon-dir.rx  { color: var(--accent); }
+  .mon-dir.sys { color: var(--blue); }
+  .mon-data  { color: var(--text); word-break: break-all; flex: 1; }
+  .mon-data.aprs-pos  { color: #a0e8b8; }
+  .mon-data.aprs-wx   { color: var(--blue); }
+  .mon-data.aprs-obj  { color: var(--purple); }
+  .mon-data.aprs-msg  { color: var(--accent2); }
+  .mon-data.sys-line  { color: var(--muted); font-style: italic; }
+  .mon-data.err-line  { color: var(--red); }
+  .mon-data.raw-hex   { color: #3a5a40; letter-spacing: .5px; }
+
+  #mon-stats {
+    font-family: 'Share Tech Mono', monospace; font-size: 11px;
+    color: var(--muted); margin-top: 6px;
+    display: flex; gap: 20px; align-items: center;
+  }
+  #mon-stats b { color: var(--accent); }
+
+  input#monFilter { width: 130px; }
+
+  /* ---- LOG BAR ---- */
+  #log-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #050806; border-top: 1px solid var(--border);
+    height: 30px; display: flex; align-items: center;
+    padding: 0 12px; gap: 10px;
+    font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  }
+  #log-text { color: var(--accent); flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  #log-text.err  { color: var(--red); }
+  #log-text.warn { color: var(--accent2); }
+  .divider { width: 1px; height: 16px; background: var(--border); flex-shrink: 0; }
+
+  /* ---- MODAL ---- */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.76); z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 4px; max-width: 560px; width: calc(100% - 32px);
+    max-height: calc(100vh - 64px); overflow-y: auto;
+    box-shadow: 0 12px 60px rgba(0,0,0,.8);
+  }
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 16px; border-bottom: 1px solid var(--border);
+  }
+  .modal-head h2 {
+    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--accent);
+  }
+  .modal-close {
+    background: none; border: none; color: var(--muted); font-size: 18px;
+    cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+  .modal-close:hover { color: var(--text); border: none; }
+  .modal-body { padding: 16px; font-size: 14px; line-height: 1.6; }
+  .modal-body p { margin-bottom: 10px; color: var(--text); }
+  .modal-step {
+    display: flex; gap: 10px; align-items: baseline;
+    background: var(--input-bg); border: 1px solid var(--dim);
+    border-radius: 2px; padding: 8px 12px; margin-bottom: 7px;
+    font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--accent2);
+  }
+  .modal-step-n { color: var(--muted); flex-shrink: 0; }
+  .modal-body code {
+    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    background: var(--input-bg); border: 1px solid var(--dim);
+    padding: 1px 6px; border-radius: 2px; color: var(--accent);
+  }
+  .modal-note {
+    font-size: 12px; color: var(--muted); margin-top: 12px;
+    border-top: 1px solid var(--border); padding-top: 10px;
+  }
+  .modal-foot {
+    padding: 11px 16px; border-top: 1px solid var(--border);
+    display: flex; gap: 8px; justify-content: flex-end; align-items: center;
+  }
+  button.help-btn {
+    padding: 4px 9px; font-size: 12px; font-weight: 700;
+    color: var(--muted); border-color: var(--dim); letter-spacing: 0;
+  }
+  button.help-btn:hover { color: var(--accent); border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- ======================================================= HEADER -->
+<div id="header">
+  <h1>NET-51TNC</h1>
+  <div class="hrow">
+    <label class="hlabel">Device IP</label>
+    <div class="ip-wrap">
+      <input id="hDeviceIp" class="hinput" type="text" value="192.168.0.120"
+        autocomplete="off"
+        onfocus="showIpDropdown()"
+        onblur="hideIpDropdown()"
+        oninput="filterIpDropdown()">
+      <div id="ipDropdown"></div>
+    </div>
+    <label class="hlabel">Port</label>
+    <input id="hDevicePort" class="hinput short" type="text" value="60000">
+  </div>
+  <div class="divider"></div>
+  <div class="hrow">
+    <label class="hlabel">Bridge</label>
+    <input id="hBridgeUrl" class="hinput" type="text" value="ws://localhost:8765">
+    <button class="help-btn" onclick="showBridgeHelp()" title="Bridge setup help">?</button>
+  </div>
+  <div class="divider"></div>
+  <div id="statusDot"></div>
+  <button id="btnConnect"    class="primary" onclick="doConnect()">Connect</button>
+  <button id="btnDisconnect" disabled        onclick="doDisconnect()">Disconnect</button>
+  <div class="divider"></div>
+  <button id="btnRead"    class="primary" disabled onclick="doRead()">Read</button>
+  <button id="btnWrite"   class="warning"  disabled onclick="doWrite()">Write</button>
+  <div class="divider"></div>
+  <button id="btnFactory" class="danger" disabled onclick="doFactory()">Factory</button>
+  <button id="btnReset"   class="danger" disabled onclick="doReset()">Reset</button>
+</div>
+
+<!-- ======================================================= TABS -->
+<div id="tabs">
+  <div class="tab active" data-tab="state">State</div>
+  <div class="tab" data-tab="network">Network</div>
+  <div class="tab" data-tab="beacon">Beacon</div>
+  <div class="tab" data-tab="tnc">TNC</div>
+  <div class="tab" data-tab="gps">GPS</div>
+  <div class="tab" data-tab="monitor">Monitor</div>
+</div>
+
+<!-- ======================================================= CONTENT -->
+<div id="content">
+
+  <!-- ===================== STATE -->
+  <div id="tab-state" class="tabpanel active">
+    <div class="section">
+      <div class="section-title">Motherboard</div>
+      <div class="section-body">
+        <div class="status-grid">
+          <div class="stat-item"><div class="stat-label">Firmware Version</div><div class="stat-value small amber" id="sFirmware">—</div></div>
+          <div class="stat-item"><div class="stat-label">Motherboard Voltage</div><div class="stat-value" id="sVoltage">—</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Network Status</div>
+      <div class="section-body">
+        <div class="status-grid">
+          <div class="stat-item"><div class="stat-label">Current Server</div><div class="stat-value blue" id="sCurServer">—</div></div>
+          <div class="stat-item"><div class="stat-label">Port</div><div class="stat-value blue" id="sCurPort">—</div></div>
+          <div class="stat-item"><div class="stat-label">Server Status Code</div><div class="stat-value" id="sSrvStatus">—</div></div>
+          <div class="stat-item"><div class="stat-label">Status</div><div class="stat-value small" id="sSrvDesc">—</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">External Meteorological Interface</div>
+      <div class="section-body">
+        <div class="status-grid">
+          <div class="stat-item"><div class="stat-label">Wind Direction</div><div class="stat-value small" id="sWxDir">—</div></div>
+          <div class="stat-item"><div class="stat-label">Humidity</div><div class="stat-value small" id="sWxHum">—</div></div>
+          <div class="stat-item"><div class="stat-label">Temperature</div><div class="stat-value small" id="sWxTemp">—</div></div>
+          <div class="stat-item"><div class="stat-label">Barometric Pressure</div><div class="stat-value small" id="sWxBaro">—</div></div>
+          <div class="stat-item"><div class="stat-label">Wind Speed (1 min)</div><div class="stat-value small" id="sWxWsp1">—</div></div>
+          <div class="stat-item"><div class="stat-label">Rainfall (1 hour)</div><div class="stat-value small" id="sWxRain1">—</div></div>
+          <div class="stat-item"><div class="stat-label">Wind Speed (max 5 min)</div><div class="stat-value small" id="sWxWsp5">—</div></div>
+          <div class="stat-item"><div class="stat-label">Rainfall (24 hours)</div><div class="stat-value small" id="sWxRain24">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== NETWORK -->
+  <div id="tab-network" class="tabpanel">
+    <div class="section">
+      <div class="section-title">51TNC IP Configuration</div>
+      <div class="section-body">
+        <div class="field-row">
+          <span class="field-label">IP Address</span>
+          <div class="ip-block">
+            <input type="text" class="ip-octet" id="nIp0" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nIp1" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nIp2" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nIp3" maxlength="3">
+          </div>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Subnet Mask</span>
+          <div class="ip-block">
+            <input type="text" class="ip-octet" id="nMask0" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nMask1" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nMask2" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nMask3" maxlength="3">
+          </div>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Gateway</span>
+          <div class="ip-block">
+            <input type="text" class="ip-octet" id="nGw0" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nGw1" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nGw2" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nGw3" maxlength="3">
+          </div>
+        </div>
+        <div class="field-row">
+          <span class="field-label">MAC Address</span>
+          <input type="text" id="nMac" class="medium" readonly style="color:var(--muted)">
+          <span style="font-size:11px;color:var(--muted)">(read-only)</span>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">APRS-IS Login — no suffix, uppercase</div>
+      <div class="section-body">
+        <div class="field-row">
+          <span class="field-label">Callsign</span>
+          <input type="text" id="nCallsign" class="narrow" maxlength="6">
+          <span class="field-label short">ID</span>
+          <input type="number" id="nId" class="num-small" min="0" max="255">
+          <span class="field-label short">Passcode</span>
+          <input type="text" id="nPasscode" class="narrow" maxlength="5">
+        </div>
+        <div class="field-row">
+          <span class="field-label">Filter</span>
+          <input type="text" id="nFilter" class="wide" maxlength="62" oninput="countChars(this,'nFilterCount',62)" placeholder="m/10">
+          <span class="char-count" id="nFilterCount">0</span>
+          <span style="color:var(--muted);font-size:11px">/ 63 char</span>
+        </div>
+        <div class="field-row">
+          <span class="field-label"></span>
+          <input type="checkbox" id="nAllowIsRf"><label for="nAllowIsRf" style="font-size:13px"> Allow IS → RF</label>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">APRS-IS Servers — port 14580</div>
+      <div class="section-body">
+        <div class="field-row">
+          <span class="field-label">Server A</span>
+          <div class="ip-block">
+            <input type="text" class="ip-octet" id="nSrvA0" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nSrvA1" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nSrvA2" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nSrvA3" maxlength="3">
+          </div>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Server B</span>
+          <div class="ip-block">
+            <input type="text" class="ip-octet" id="nSrvB0" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nSrvB1" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nSrvB2" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nSrvB3" maxlength="3">
+          </div>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Server C</span>
+          <div class="ip-block">
+            <input type="text" class="ip-octet" id="nSrvC0" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nSrvC1" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nSrvC2" maxlength="3"><span class="ip-sep">.</span>
+            <input type="text" class="ip-octet" id="nSrvC3" maxlength="3">
+          </div>
+        </div>
+        <div class="field-row" style="margin-top:6px">
+          <span class="field-label"></span>
+          <div class="radio-group">
+            <label class="radio-item"><input type="radio" name="srvRotate" value="0"> Server auto rotate</label>
+            <label class="radio-item"><input type="radio" name="srvRotate" value="1"> Always use Server A</label>
+          </div>
+        </div>
+        <div class="field-row">
+          <span class="field-label"></span>
+          <input type="checkbox" id="nRestartTimeout"><label for="nRestartTimeout" style="font-size:13px"> Restart connection timeout</label>
+        </div>
+        <div class="field-row">
+          <span class="field-label"></span>
+          <input type="checkbox" id="nHellocq"><label for="nHellocq" style="font-size:13px"> Enable APRS.HELLOCQ.NET server (218.104.177.211:14580)</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== BEACON -->
+  <div id="tab-beacon" class="tabpanel">
+    <div class="section">
+      <div class="section-title">Gateway Beacon — 0-65535 seconds, 0 = off</div>
+      <div class="section-body">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Lat: 3134.10N &nbsp;|&nbsp; Lon: 12020.20E &nbsp;|&nbsp; Max 70 words total</div>
+        <div class="field-row">
+          <span class="field-label">Gateway ID</span>
+          <input type="number" id="bGwId" class="num-small" min="0" max="255">
+          <span class="field-label" style="min-width:150px">IS Reporting (sec)</span>
+          <input type="number" id="bGwIsTime" class="num-field" min="0" max="65535">
+          <span class="field-label" style="min-width:130px">RF Reporting (sec)</span>
+          <input type="number" id="bGwRfTime" class="num-field" min="0" max="65535">
+        </div>
+        <div class="field-row">
+          <span class="field-label">Path</span>
+          <select id="bGwPath" class="sel-narrow">
+            <option value="0">---</option><option value="1">WIDE1-1</option>
+            <option value="2">WIDE1-1,WIDE2-1</option><option value="3">WIDE2-1</option>
+          </select>
+          <span class="field-label short">Type</span>
+          <input type="text" id="bGwType" class="tiny" maxlength="1">
+          <span class="field-label short">Sym Table</span>
+          <input type="text" id="bGwSymTable" class="tiny" maxlength="1">
+          <span class="field-label short">Icon</span>
+          <input type="text" id="bGwIcon" class="tiny" maxlength="1">
+          <input type="checkbox" id="bGwRptVoltage">
+          <label for="bGwRptVoltage" style="font-size:13px;margin-left:4px"> Report Voltage</label>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Latitude</span>
+          <input type="text" id="bGwLat" class="narrow" maxlength="9" placeholder="3134.10N">
+          <span class="field-label" style="min-width:75px">Longitude</span>
+          <input type="text" id="bGwLon" class="narrow" maxlength="10" placeholder="12020.20E">
+        </div>
+        <div class="field-row">
+          <span class="field-label">Custom Info</span>
+          <input type="text" id="bGwCustom" class="wide" maxlength="59"
+            oninput="countChars(this,'bGwCustomCount',60);updateBeaconPreview('gw')">
+          <span class="char-count" id="bGwCustomCount">0</span>
+          <span style="color:var(--muted);font-size:11px">/ 60 char</span>
+        </div>
+        <div class="aprs-preview" id="bGwPreview">—</div>
+        <div class="field-row" style="margin-top:10px">
+          <span class="field-label">Test Beacon</span>
+          <button id="btnGwIsTest" class="primary" disabled onclick="doGwIsTest()">IS Test</button>
+          <button id="btnGwRfTest" class="primary" disabled onclick="doGwRfTest()">RF Test</button>
+          <span style="font-size:11px;color:var(--muted);margin-left:8px">Send one-off gateway beacon to IS / RF immediately</span>
+        </div>
+        <pre id="gwTestResult" style="display:none;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--accent);background:var(--input-bg);border:1px solid var(--dim);padding:6px 10px;margin-top:6px;white-space:pre-wrap;word-break:break-all;border-radius:2px"></pre>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Weather Beacon — 0-65535 seconds, 0 = off</div>
+      <div class="section-body">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Lat: 3134.10N &nbsp;|&nbsp; Lon: 12020.20E &nbsp;|&nbsp; Max 50 words total</div>
+        <div class="field-row">
+          <span class="field-label">Meteorological ID</span>
+          <input type="number" id="bWxId" class="num-small" min="0" max="255">
+          <span class="field-label" style="min-width:150px">IS Reporting (sec)</span>
+          <input type="number" id="bWxIsTime" class="num-field" min="0" max="65535">
+          <span class="field-label" style="min-width:130px">RF Reporting (sec)</span>
+          <input type="number" id="bWxRfTime" class="num-field" min="0" max="65535">
+        </div>
+        <div class="field-row">
+          <span class="field-label">Path</span>
+          <select id="bWxPath" class="sel-narrow">
+            <option value="0">---</option><option value="1">WIDE1-1</option>
+            <option value="2">WIDE1-1,WIDE2-1</option><option value="3">WIDE2-1</option>
+          </select>
+          <span class="field-label short">Type</span>
+          <input type="text" id="bWxType" class="tiny" maxlength="1">
+          <span class="field-label short">Sym Table</span>
+          <input type="text" id="bWxSymTable" class="tiny" maxlength="1">
+          <span class="field-label short">Icon</span>
+          <input type="text" id="bWxIcon" class="tiny" maxlength="1">
+          <input type="checkbox" id="bWxRptVoltage">
+          <label for="bWxRptVoltage" style="font-size:13px;margin-left:4px"> Report Voltage</label>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Latitude</span>
+          <input type="text" id="bWxLat" class="narrow" maxlength="9" placeholder="3134.10N">
+          <span class="field-label" style="min-width:75px">Longitude</span>
+          <input type="text" id="bWxLon" class="narrow" maxlength="10" placeholder="12020.20E">
+        </div>
+        <div class="field-row">
+          <span class="field-label">Custom Info</span>
+          <input type="text" id="bWxCustom" class="wide" maxlength="49"
+            oninput="countChars(this,'bWxCustomCount',49);updateBeaconPreview('wx')">
+          <span class="char-count" id="bWxCustomCount">0</span>
+          <span style="color:var(--muted);font-size:11px">/ 50 char</span>
+        </div>
+        <div class="field-row">
+          <span class="field-label"></span>
+          <input type="checkbox" id="bWxLcdDisplay">
+          <label for="bWxLcdDisplay" style="font-size:13px"> LCD Display Data</label>
+        </div>
+        <div class="aprs-preview" id="bWxPreview">—</div>
+        <div class="field-row" style="margin-top:10px">
+          <span class="field-label">Test Beacon</span>
+          <button id="btnWxIsTest" class="primary" disabled onclick="doWxIsTest()">IS Test</button>
+          <button id="btnWxRfTest" class="primary" disabled onclick="doWxRfTest()">RF Test</button>
+          <span style="font-size:11px;color:var(--muted);margin-left:8px">Send one-off weather beacon to IS / RF immediately</span>
+        </div>
+        <pre id="wxTestResult" style="display:none;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--accent);background:var(--input-bg);border:1px solid var(--dim);padding:6px 10px;margin-top:6px;white-space:pre-wrap;word-break:break-all;border-radius:2px"></pre>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Options</div>
+      <div class="section-body">
+        <div class="field-row">
+          <input type="checkbox" id="bPm25"><label for="bPm25" style="font-size:13px"> Detection of PM 2.5</label>
+          <div style="width:20px"></div>
+          <input type="checkbox" id="bUseGps"><label for="bUseGps" style="font-size:13px"> Using GPS (IO1) Coordinates</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TNC -->
+  <div id="tab-tnc" class="tabpanel">
+    <div class="section">
+      <div class="section-title">Radio PTT</div>
+      <div class="section-body">
+        <div class="field-row">
+          <span class="field-label">PTT Delay</span>
+          <select id="tPttDelay" class="sel-narrow">
+            <option value="0">0 ms</option><option value="1">500 ms</option>
+            <option value="2">1000 ms</option><option value="3">1500 ms</option><option value="4">2000 ms</option>
+          </select>
+          <span class="field-label" style="min-width:115px">Minimum Interval</span>
+          <input type="number" id="tMinInterval" class="num-small" min="0" max="255">
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Transmitting Output Level</div>
+      <div class="section-body">
+        <div class="radio-group">
+          <label class="radio-item"><input type="radio" name="txLevel" value="0"> YAESU Low</label>
+          <label class="radio-item"><input type="radio" name="txLevel" value="1"> ICOM High</label>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">DIGI ON/OFF</div>
+      <div class="section-body">
+        <div class="field-row">
+          <input type="checkbox" id="tWide1"><label for="tWide1" style="font-size:13px"> Enable WIDE1</label>
+          <div style="flex:1"></div>
+          <input type="checkbox" id="tChannelIdle"><label for="tChannelIdle" style="font-size:13px"> Channel Idle then Forwarded</label>
+          <div style="flex:1"></div>
+          <span class="field-label mini">TX Waiting</span>
+          <select id="tTxWaiting" class="sel-narrow">
+            <option value="0">0 ms</option><option value="1">250 ms</option>
+            <option value="2">500 ms</option><option value="3">1000 ms</option>
+          </select>
+        </div>
+        <div class="field-row">
+          <input type="checkbox" id="tWide2"><label for="tWide2" style="font-size:13px"> Enable WIDE2</label>
+        </div>
+        <div class="field-row">
+          <input type="checkbox" id="tInsertGw"><label for="tInsertGw" style="font-size:13px"> Insert Gateway Name</label>
+        </div>
+        <div class="field-row">
+          <input type="checkbox" id="tHwSql">
+          <label for="tHwSql" style="font-size:13px;color:var(--red)"> Hardware SQL Idle then Forwarded
+            <span style="font-size:11px;color:var(--muted)"> — suspends TNC decoder if radio not connected</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">TTL Interface Output Format</div>
+      <div class="section-body">
+        <div class="radio-group">
+          <label class="radio-item"><input type="radio" name="ttlFmt" value="0"> Clever 4800</label>
+          <label class="radio-item"><input type="radio" name="ttlFmt" value="1"> Text 9600</label>
+          <label class="radio-item"><input type="radio" name="ttlFmt" value="2"> KISS 9600</label>
+          <label class="radio-item"><input type="radio" name="ttlFmt" value="3"> Clever 9600</label>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">LCD Display</div>
+      <div class="section-body">
+        <div class="field-row">
+          <input type="checkbox" id="tRfLcd">
+          <label for="tRfLcd" style="font-size:13px"> RF LCD Simultaneous Display Decoded Data</label>
+        </div>
+        <div class="field-row" style="margin-top:6px">
+          <div class="radio-group">
+            <label class="radio-item"><input type="radio" name="lcdType" value="0"> Close</label>
+            <label class="radio-item"><input type="radio" name="lcdType" value="1"> LCD12864 (ST7920)</label>
+            <label class="radio-item"><input type="radio" name="lcdType" value="2"> Color 320×240</label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== GPS -->
+  <div id="tab-gps" class="tabpanel">
+    <div class="section">
+      <div class="section-title">GPS (IO1) Rate</div>
+      <div class="section-body">
+        <div class="radio-group">
+          <label class="radio-item"><input type="radio" name="gpsRate" value="0"> GPS 4800</label>
+          <label class="radio-item"><input type="radio" name="gpsRate" value="1"> GPS 9600</label>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Mode — when using Gateway/Weather Beacons, GPS should choose Close</div>
+      <div class="section-body">
+        <div class="field-row">
+          <div class="radio-group">
+            <label class="radio-item"><input type="radio" name="gpsMode" value="0"> Close</label>
+            <label class="radio-item"><input type="radio" name="gpsMode" value="1"> Timing</label>
+            <label class="radio-item"><input type="radio" name="gpsMode" value="2"> Smart Beacon</label>
+            <label class="radio-item"><input type="radio" name="gpsMode" value="3"> Manual / Linkage IO2</label>
+          </div>
+        </div>
+        <div class="field-row" style="margin-top:6px">
+          <span class="field-label">Timing (0–255 sec)</span>
+          <input type="number" id="gTiming" class="num-field" min="0" max="255">
+        </div>
+        <div class="field-row">
+          <input type="checkbox" id="gLcdGps">
+          <label for="gLcdGps" style="font-size:13px"> LCD Simultaneous Display of GPS Data</label>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">GPS Tracks</div>
+      <div class="section-body">
+        <div class="field-row">
+          <span class="field-label">Track ID</span>
+          <input type="number" id="gId" class="num-small" min="0" max="255">
+          <span class="field-label" style="min-width:115px">Forwarding Path</span>
+          <select id="gPath" class="sel-narrow">
+            <option value="0">---</option><option value="1">WIDE1-1</option>
+            <option value="2">WIDE1-1,WIDE2-1</option><option value="3">WIDE2-1</option>
+          </select>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Type</span>
+          <input type="text" id="gType" class="tiny" maxlength="1">
+          <span class="field-label short">Sym Table</span>
+          <input type="text" id="gSymTable" class="tiny" maxlength="1">
+          <span class="field-label short">Icon</span>
+          <input type="text" id="gIcon" class="tiny" maxlength="1">
+        </div>
+        <div class="field-row">
+          <span class="field-label">Custom Information</span>
+          <input type="text" id="gCustom" class="wide" maxlength="59" oninput="countChars(this,'gCustomCount',60)">
+          <span class="char-count" id="gCustomCount">0</span>
+          <span style="color:var(--muted);font-size:11px">/ 60 char</span>
+        </div>
+        <div class="field-row">
+          <input type="checkbox" id="gRptHeading">
+          <label for="gRptHeading" style="font-size:13px"> Report Heading, Speed, Altitude</label>
+          <div style="width:20px"></div>
+          <input type="checkbox" id="gRptVoltage">
+          <label for="gRptVoltage" style="font-size:13px"> Report Voltage</label>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">GPS Lat/Lon Offset — unit 0.01°, format: -11 +29</div>
+      <div class="section-body">
+        <div class="field-row">
+          <input type="checkbox" id="gEnableOffset">
+          <label for="gEnableOffset" style="font-size:13px"> Enable Offset</label>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Latitude</span>
+          <div class="radio-group">
+            <label class="radio-item"><input type="radio" name="gLatSign" value="0"> +</label>
+            <label class="radio-item"><input type="radio" name="gLatSign" value="1"> −</label>
+          </div>
+          <input type="number" id="gLatOffset" class="num-small" min="0" max="255">
+          <span style="width:22px"></span>
+          <span class="field-label short">Longitude</span>
+          <div class="radio-group">
+            <label class="radio-item"><input type="radio" name="gLonSign" value="0"> +</label>
+            <label class="radio-item"><input type="radio" name="gLonSign" value="1"> −</label>
+          </div>
+          <input type="number" id="gLonOffset" class="num-small" min="0" max="255">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MONITOR -->
+  <div id="tab-monitor" class="tabpanel">
+    <div id="mon-toolbar">
+      <button id="btnRecord" onclick="monToggleRecord()" title="Log incoming serial data to this window">Record</button>
+      <div class="divider"></div>
+      <label class="hlabel">Filter</label>
+      <input id="monFilter" type="text" placeholder="callsign or text…" oninput="applyMonFilter()">
+      <div class="divider"></div>
+      <button id="btnHex"   onclick="toggleHex()"  title="Show raw hex bytes">HEX</button>
+      <button id="btnPause" onclick="monPause()"   title="Pause scrolling">Pause</button>
+      <button               onclick="monClear()"   title="Clear stream">Clear</button>
+    </div>
+
+    <div id="mon-stream"></div>
+
+    <div id="mon-stats">
+      <span>RX <b id="mStatRx">0</b> B</span>
+      <span>Lines <b id="mStatLines">0</b></span>
+      <span id="mStatConn" style="color:var(--muted)">● not recording</span>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<!-- ======================================================= BRIDGE MODAL -->
+<div id="bridgeModal" class="modal-overlay" onclick="if(event.target===this)closeBridgeHelp()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>WebSocket → TCP Bridge</h2>
+      <button class="modal-close" onclick="closeBridgeHelp()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Browsers cannot open raw TCP connections. This small Python relay listens for WebSocket connections from this page and forwards them to the TNC device over TCP.</p>
+      <p style="font-size:12px;color:var(--muted)">Requires Python 3.7+ &nbsp;·&nbsp; one-time setup &nbsp;·&nbsp; runs locally</p>
+      <div class="modal-step"><span class="modal-step-n">1.</span> Download <code>bridge.py</code> using the button below</div>
+      <div class="modal-step"><span class="modal-step-n">2.</span> Install dependency: <code>pip install websockets</code></div>
+      <div class="modal-step"><span class="modal-step-n">3.</span> Run the bridge: <code>python3 bridge.py</code></div>
+      <div class="modal-step"><span class="modal-step-n">4.</span> Set Bridge URL to <code>ws://localhost:8765</code> and click Connect</div>
+      <p class="modal-note">Binds to <code>localhost</code> only by default. Run <code>python3 bridge.py --help</code> for bind host/port options.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="primary" onclick="downloadBridge()">⬇ Download bridge.py</button>
+      <button onclick="closeBridgeHelp()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= LOG BAR -->
+<div id="log-bar">
+  <span style="color:var(--muted);font-size:10px;letter-spacing:1px">CFG</span>
+  <span id="log-text">Ready — connect to device to begin</span>
+</div>
+
+<!-- ======================================================= JS -->
+<script>
+// ================================================================
+// CONFIRMED PROTOCOL (from pcap analysis)
+// READ:  → #HELLO (6 bytes)
+//        ← #HELLO (6) + 512-byte config block + ASCII CRLF tail
+// WRITE: → #HELLO (6) + 512-byte config block = 518 bytes total
+//        ← 6 null bytes (ACK)
+// ================================================================
+const HELLO       = new Uint8Array([0x23,0x48,0x45,0x4C,0x4C,0x4F]); // #HELLO
+const FACTORY_CMD = '#FACTORY';
+const RESET_CMD   = '#RESET';
+// Beacon test commands (confirmed from pcap)
+const GATE_IS_TEST_CMD = '#GATE_IS_TEST';
+const GATE_RF_TEST_CMD = '#GATE_RF_TEST';
+// Weather beacon test commands (confirmed from pcap)
+const WX_IS_TEST_CMD   = '#WX_IS_TEST';
+const WX_RF_TEST_CMD   = '#WX_RF_TEST';
+const CONFIG_SIZE = 512;
+const STATUS_CODES = {
+  1:'Connecting', 2:'Connected (no login)', 3:'Login sent',
+  4:'Login error', 5:'Linked — successful login', 6:'Timeout retry'
+};
+
+// ----------------------------------------------------------------
+// Config connection state
+let cfgWs   = null;
+let rxBuf   = new Uint8Array(0);
+let rxMode  = null; // 'read' | 'write' | 'beacon-test'
+let rawConfig    = new Uint8Array(CONFIG_SIZE);
+let wxDataBlock  = '';
+let beaconTestEl    = null;  // <pre> element receiving test response
+let beaconTestTimer = null;  // timeout to finalize test mode
+
+// Monitor state — taps the existing cfgWs stream; no separate connection
+let monRecording = false;
+let monPaused    = false;
+let monShowHex   = false;
+let monRxBytes   = 0;
+let monLines     = 0;
+let monLineBuf   = ''; // partial line buffer for incomplete APRS lines
+const MON_MAX    = 2000;
+
+// ================================================================
+// UTILS
+// ================================================================
+function log(msg, cls='') {
+  const el = document.getElementById('log-text');
+  el.textContent = msg; el.className = cls;
+}
+function appendBytes(a, b) {
+  const c = new Uint8Array(a.length + b.length);
+  c.set(a); c.set(b, a.length); return c;
+}
+function bytesToIp(buf, off) {
+  return `${buf[off]}.${buf[off+1]}.${buf[off+2]}.${buf[off+3]}`;
+}
+function readStr(buf, off, maxLen) {
+  let s = '';
+  for (let i=0; i<maxLen; i++) { if (!buf[off+i]) break; s += String.fromCharCode(buf[off+i]); }
+  return s;
+}
+function writeStr(buf, off, maxLen, str) {
+  for (let i=0; i<maxLen; i++) buf[off+i] = i < str.length ? str.charCodeAt(i) & 0xFF : 0;
+}
+function getBE16(b, o)   { return (b[o]<<8)|b[o+1]; }
+function setBE16(b, o, v){ v=Math.min(65535,Math.max(0,v|0)); b[o]=(v>>8)&0xFF; b[o+1]=v&0xFF; }
+function getRadio(name)  { const r=document.querySelector(`input[name="${name}"]:checked`); return r ? +r.value : 0; }
+function setRadio(name,v){ const r=document.querySelector(`input[name="${name}"][value="${v}"]`); if(r) r.checked=true; }
+function chk(id)         { return document.getElementById(id).checked ? 1 : 0; }
+function setChk(id, v)   { document.getElementById(id).checked = !!v; }
+function fld(id)         { return document.getElementById(id).value; }
+function setFld(id, v)   { document.getElementById(id).value = v; }
+function numFld(id)      { return parseInt(document.getElementById(id).value) || 0; }
+function countChars(el, countId, max) {
+  const n = el.value.length;
+  const c = document.getElementById(countId);
+  c.textContent = n;
+  c.className = 'char-count' + (n > max * .85 ? ' warn' : '');
+}
+function getIpOctets(pfx) { return [0,1,2,3].map(i => parseInt(fld(pfx+i))||0); }
+function setIpOctets(pfx, ipStr) {
+  ipStr.split('.').forEach((v,i) => setFld(pfx+i, v));
+}
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ================================================================
+// RECENT IP HISTORY
+// ================================================================
+const IP_HISTORY_KEY = '51tnc-recent-ips';
+
+function loadRecentIps() {
+  try { return JSON.parse(localStorage.getItem(IP_HISTORY_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveRecentIp(ip) {
+  if (!ip || !ip.trim()) return;
+  ip = ip.trim();
+  try {
+    let list = loadRecentIps().filter(x => x !== ip);
+    list.unshift(ip);
+    localStorage.setItem(IP_HISTORY_KEY, JSON.stringify(list.slice(0, 5)));
+  } catch {}
+}
+function renderIpDropdown(query) {
+  const list = loadRecentIps().filter(ip =>
+    !query || ip.includes(query.trim())
+  );
+  const dd = document.getElementById('ipDropdown');
+  if (!list.length) { dd.classList.remove('open'); return; }
+  dd.innerHTML = list.map(ip =>
+    `<div class="ipdrop-item" onmousedown="selectRecentIp('${escHtml(ip)}')">${escHtml(ip)}</div>`
+  ).join('');
+  dd.classList.add('open');
+}
+function showIpDropdown()   { renderIpDropdown(''); }        // show all on focus
+function filterIpDropdown() { renderIpDropdown(fld('hDeviceIp')); } // filter as typed
+function hideIpDropdown()   {                                // delay lets mousedown fire first
+  setTimeout(() => document.getElementById('ipDropdown').classList.remove('open'), 150);
+}
+function selectRecentIp(ip) {
+  setFld('hDeviceIp', ip);
+  document.getElementById('ipDropdown').classList.remove('open');
+  document.getElementById('hDeviceIp').focus();
+}
+
+// ================================================================
+// TABS
+// ================================================================
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tabpanel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('tab-'+t.dataset.tab).classList.add('active');
+  });
+});
+
+// ================================================================
+// BEACON PREVIEW
+// ================================================================
+function buildGwAprsStr() {
+  return (fld('bGwType')||'!')[0] + fld('bGwLat').padEnd(8) +
+    (fld('bGwSymTable')||'/')[0] + fld('bGwLon').padEnd(9) +
+    (fld('bGwIcon')||'&')[0] + fld('bGwCustom');
+}
+function buildWxAprsStr() {
+  const wx = wxDataBlock || 'c000s000g000t000r000p000h00b00000';
+  const c  = fld('bWxCustom');
+  return (fld('bWxType')||'=')[0] + fld('bWxLat').padEnd(8) +
+    (fld('bWxSymTable')||'/')[0] + fld('bWxLon').padEnd(9) +
+    (fld('bWxIcon')||'_')[0] + wx + (c?' ':'')+c;
+}
+function updateBeaconPreview(w) {
+  document.getElementById(w==='gw'?'bGwPreview':'bWxPreview').textContent =
+    (w==='gw' ? buildGwAprsStr() : buildWxAprsStr()) || '—';
+}
+['bGwType','bGwLat','bGwSymTable','bGwLon','bGwIcon','bGwCustom'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => updateBeaconPreview('gw'));
+});
+['bWxType','bWxLat','bWxSymTable','bWxLon','bWxIcon','bWxCustom'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => updateBeaconPreview('wx'));
+});
+
+// ================================================================
+// PARSE CONFIG BLOCK → UI
+// ================================================================
+function parseConfig(buf) {
+  rawConfig = buf.slice(0, CONFIG_SIZE);
+  // Network
+  setFld('nCallsign', readStr(buf,0,6));  setFld('nId', buf[7]);
+  setFld('nPasscode', readStr(buf,9,5));
+  setIpOctets('nIp',   bytesToIp(buf,16));
+  setIpOctets('nMask', bytesToIp(buf,20));
+  setIpOctets('nGw',   bytesToIp(buf,24));
+  setFld('nMac', [...buf.slice(28,34)].map(b=>b.toString(16).padStart(2,'0')).join(':').toUpperCase());
+  setIpOctets('nSrvA', bytesToIp(buf,34));
+  setIpOctets('nSrvB', bytesToIp(buf,38));
+  setIpOctets('nSrvC', bytesToIp(buf,42));
+  setChk('nAllowIsRf', buf[46]);  setRadio('srvRotate', buf[47]);
+  setChk('nRestartTimeout', buf[48]);  setChk('nHellocq', buf[49]);
+  setFld('nFilter', readStr(buf,64,63));
+  countChars(document.getElementById('nFilter'),'nFilterCount',62);
+  // Gateway beacon
+  setFld('bGwIsTime', getBE16(buf,128));  setFld('bGwRfTime', getBE16(buf,130));
+  setFld('bGwPath', buf[132]);  setChk('bGwRptVoltage', buf[133]);
+  setFld('bGwId', buf[135]);
+  const gwRaw = readStr(buf,144,111);
+  if (gwRaw.length >= 20) {
+    setFld('bGwType', gwRaw[0]);  setFld('bGwLat', gwRaw.substring(1,9).trim());
+    setFld('bGwSymTable', gwRaw[9]);  setFld('bGwLon', gwRaw.substring(10,19).trim());
+    setFld('bGwIcon', gwRaw[19]);  setFld('bGwCustom', gwRaw.substring(20).trim());
+    countChars(document.getElementById('bGwCustom'),'bGwCustomCount',60);
+  }
+  updateBeaconPreview('gw');
+  // Weather beacon
+  setFld('bWxIsTime', getBE16(buf,256));  setFld('bWxRfTime', getBE16(buf,258));
+  setFld('bWxPath', buf[260]);  setChk('bWxRptVoltage', buf[261]);
+  setChk('bWxLcdDisplay', buf[262]);  setFld('bWxId', buf[263]);
+  const wxRaw = readStr(buf,272,111);
+  if (wxRaw.length >= 20) {
+    setFld('bWxType', wxRaw[0]);  setFld('bWxLat', wxRaw.substring(1,9).trim());
+    setFld('bWxSymTable', wxRaw[9]);  setFld('bWxLon', wxRaw.substring(10,19).trim());
+    setFld('bWxIcon', wxRaw[19]);
+    const rest = wxRaw.substring(20);
+    const m = rest.match(/^(c[\d.]+s[\d.]+g[\d.]+t[\d.-]+r[\d.]+p[\d.]+h[\d.]+b[\d.]+)\s*(.*)/);
+    if (m) { wxDataBlock = m[1]; setFld('bWxCustom', m[2].trim()); }
+    else   { wxDataBlock = '';   setFld('bWxCustom', rest.trim()); }
+    countChars(document.getElementById('bWxCustom'),'bWxCustomCount',49);
+  }
+  updateBeaconPreview('wx');
+  // TNC
+  setFld('tPttDelay',    Math.min(buf[384],4));
+  setFld('tMinInterval', buf[385]);
+  setRadio('txLevel', buf[386]);
+  const df = buf[387];
+  setChk('tWide1',(df)&1); setChk('tWide2',(df>>1)&1);
+  setChk('tInsertGw',(df>>2)&1); setChk('tChannelIdle',(df>>3)&1);
+  setChk('tHwSql', buf[388]);
+  setRadio('ttlFmt', Math.min(buf[389],3));
+  setChk('tRfLcd', buf[390]);
+  setFld('tTxWaiting', Math.min(buf[392],3));
+  setRadio('lcdType', Math.min(buf[393],2));
+  // GPS
+  setRadio('gpsRate', buf[400]);  setRadio('gpsMode', Math.min(buf[401],3));
+  setFld('gPath', buf[402]);  setFld('gId', buf[403]);  setFld('gTiming', buf[404]);
+  setFld('gType',    String.fromCharCode(buf[405]||0x21));
+  setFld('gSymTable',String.fromCharCode(buf[406]||0x2F));
+  setFld('gIcon',    String.fromCharCode(buf[407]||0x23));
+  setChk('gRptHeading', buf[408]);  setChk('gRptVoltage', buf[409]);
+  setChk('gEnableOffset', buf[410]);
+  setFld('gLatOffset', buf[411]);  setRadio('gLatSign', buf[412]);
+  setFld('gLonOffset', buf[413]);  setRadio('gLonSign', buf[414]);
+  setChk('gLcdGps', buf[415]);
+  setFld('gCustom', readStr(buf,416,60));
+  countChars(document.getElementById('gCustom'),'gCustomCount',60);
+}
+
+// ================================================================
+// SERIALIZE UI → CONFIG BLOCK
+// ================================================================
+function serializeConfig() {
+  const buf = new Uint8Array(CONFIG_SIZE);
+  writeStr(buf,0,6, fld('nCallsign').toUpperCase().substring(0,6));
+  buf[7] = numFld('nId') & 0xFF;
+  writeStr(buf,9,5, fld('nPasscode').substring(0,5));
+  getIpOctets('nIp').forEach((b,i)   => buf[16+i]=b);
+  getIpOctets('nMask').forEach((b,i) => buf[20+i]=b);
+  getIpOctets('nGw').forEach((b,i)   => buf[24+i]=b);
+  rawConfig.slice(28,34).forEach((b,i) => buf[28+i]=b); // MAC preserved
+  getIpOctets('nSrvA').forEach((b,i) => buf[34+i]=b);
+  getIpOctets('nSrvB').forEach((b,i) => buf[38+i]=b);
+  getIpOctets('nSrvC').forEach((b,i) => buf[42+i]=b);
+  buf[46]=chk('nAllowIsRf'); buf[47]=getRadio('srvRotate');
+  buf[48]=chk('nRestartTimeout'); buf[49]=chk('nHellocq');
+  writeStr(buf,64,63, fld('nFilter').substring(0,62));
+
+  setBE16(buf,128,numFld('bGwIsTime'));  setBE16(buf,130,numFld('bGwRfTime'));
+  buf[132]=numFld('bGwPath');  buf[133]=chk('bGwRptVoltage');
+  buf[134]=rawConfig[134]; // unknown byte — preserved
+  buf[135]=numFld('bGwId')&0xFF;
+  writeStr(buf,144,111, buildGwAprsStr());
+
+  setBE16(buf,256,numFld('bWxIsTime'));  setBE16(buf,258,numFld('bWxRfTime'));
+  buf[260]=numFld('bWxPath');  buf[261]=chk('bWxRptVoltage');
+  buf[262]=chk('bWxLcdDisplay');  buf[263]=numFld('bWxId')&0xFF;
+  writeStr(buf,272,111, buildWxAprsStr());
+
+  buf[384]=numFld('tPttDelay');  buf[385]=numFld('tMinInterval')&0xFF;
+  buf[386]=getRadio('txLevel');
+  buf[387]=(chk('tWide1'))|(chk('tWide2')<<1)|(chk('tInsertGw')<<2)|(chk('tChannelIdle')<<3);
+  buf[388]=chk('tHwSql');  buf[389]=getRadio('ttlFmt');
+  buf[390]=chk('tRfLcd');  buf[391]=rawConfig[391]; // unknown byte — preserved
+  buf[392]=numFld('tTxWaiting');  buf[393]=getRadio('lcdType');
+
+  buf[400]=getRadio('gpsRate');  buf[401]=getRadio('gpsMode');
+  buf[402]=numFld('gPath');  buf[403]=numFld('gId')&0xFF;  buf[404]=numFld('gTiming')&0xFF;
+  buf[405]=(fld('gType')[0]||'!').charCodeAt(0);
+  buf[406]=(fld('gSymTable')[0]||'/').charCodeAt(0);
+  buf[407]=(fld('gIcon')[0]||'#').charCodeAt(0);
+  buf[408]=chk('gRptHeading');  buf[409]=chk('gRptVoltage');
+  buf[410]=chk('gEnableOffset');
+  buf[411]=numFld('gLatOffset')&0xFF;  buf[412]=getRadio('gLatSign');
+  buf[413]=numFld('gLonOffset')&0xFF;  buf[414]=getRadio('gLonSign');
+  buf[415]=chk('gLcdGps');
+  writeStr(buf,416,60, fld('gCustom').substring(0,59));
+  return buf;
+}
+
+// ================================================================
+// PARSE STATUS TAIL
+// ================================================================
+function parseStatus(tail) {
+  const L = tail.split('\r\n').filter(l=>l!=='');
+  const fw=L[0]?L[0].trim():'—', srv=L[1]?L[1].trim():'—',
+        port=L[2]?L[2].trim():'—', status=L[3]?L[3].trim():'—',
+        wxLine=L[4]||null, volt=L[5]?L[5].trim():'—';
+  document.getElementById('sFirmware').textContent  = fw;
+  document.getElementById('sVoltage').textContent   = volt;
+  document.getElementById('sCurServer').textContent = srv;
+  document.getElementById('sCurPort').textContent   = port;
+  document.getElementById('sSrvStatus').textContent = status;
+  const si = parseInt(status);
+  document.getElementById('sSrvStatus').className   = 'stat-value' + (si===5?'':' red');
+  document.getElementById('sSrvDesc').textContent   = STATUS_CODES[si]||'Unknown';
+  if (wxLine) {
+    const m = wxLine.match(/c([\d.]+)s([\d.]+)g([\d.]+)t([\d.-]+)r([\d.]+)p([\d.]+)h([\d.]+)b([\d.]+)/);
+    const nd = v => (/^\.+$/.test(v)||v==='000'||v==='00') ? '--' : v;
+    if (m) {
+      document.getElementById('sWxDir').textContent    = nd(m[1])!=='--' ? nd(m[1])+'°' : '--';
+      document.getElementById('sWxWsp1').textContent   = nd(m[2])!=='--' ? nd(m[2])+' mph' : '--';
+      document.getElementById('sWxWsp5').textContent   = nd(m[3])!=='--' ? nd(m[3])+' mph' : '--';
+      document.getElementById('sWxTemp').textContent   = nd(m[4])!=='--' ? nd(m[4])+'°F' : '--';
+      document.getElementById('sWxRain1').textContent  = nd(m[5])!=='--' ? (parseInt(m[5])/100).toFixed(2)+'"' : '--';
+      document.getElementById('sWxRain24').textContent = nd(m[6])!=='--' ? (parseInt(m[6])/100).toFixed(2)+'"' : '--';
+      document.getElementById('sWxHum').textContent    = nd(m[7])!=='--' ? nd(m[7])+'%' : '--';
+      document.getElementById('sWxBaro').textContent   = nd(m[8])!=='--' ? (parseInt(m[8])/10).toFixed(1)+' mbar' : '--';
+    } else {
+      ['sWxDir','sWxHum','sWxTemp','sWxBaro','sWxWsp1','sWxRain1','sWxWsp5','sWxRain24']
+        .forEach(id => document.getElementById(id).textContent = '--');
+    }
+  }
+}
+
+// ================================================================
+// CONFIG WEBSOCKET
+// ================================================================
+function setCfgConnected(yes) {
+  document.getElementById('statusDot').classList.toggle('connected', yes);
+  document.getElementById('btnConnect').disabled    = yes;
+  document.getElementById('btnDisconnect').disabled = !yes;
+  ['btnRead','btnWrite','btnFactory','btnReset',
+   'btnGwIsTest','btnGwRfTest','btnWxIsTest','btnWxRfTest'].forEach(id =>
+    document.getElementById(id).disabled = !yes);
+}
+
+function doConnect() {
+  if (cfgWs) { cfgWs.close(); cfgWs=null; }
+  log('Connecting to bridge…');
+  cfgWs = new WebSocket(fld('hBridgeUrl'));
+  cfgWs.binaryType = 'arraybuffer';
+  cfgWs.onopen = () => {
+    cfgWs.send(fld('hDeviceIp')+':'+fld('hDevicePort'));
+    log(`Bridge open → TCP ${fld('hDeviceIp')}:${fld('hDevicePort')}`);
+    setCfgConnected(true);
+    monFeedSys(`Connected — ${fld('hDeviceIp')}:${fld('hDevicePort')}`);
+    saveRecentIp(fld('hDeviceIp'));
+  };
+  cfgWs.onclose = e => {
+    log(`Disconnected (${e.code})`, e.code!==1000?'err':'');
+    setCfgConnected(false);
+    cfgWs=null; rxMode=null; rxBuf=new Uint8Array(0);
+    monFeedSys(`Disconnected (${e.code})`);
+  };
+  cfgWs.onerror = () => log('Bridge error — is bridge.py running?','err');
+  cfgWs.onmessage = ev => {
+    const bytes = ev.data instanceof ArrayBuffer ? new Uint8Array(ev.data) : new TextEncoder().encode(ev.data);
+    handleCfgRx(bytes);
+  };
+}
+function doDisconnect() { if(cfgWs) cfgWs.close(); }
+
+function handleCfgRx(bytes) {
+  rxBuf = appendBytes(rxBuf, bytes);
+  if (rxMode === 'read') {
+    if (rxBuf.length >= 518) {
+      const hdr = String.fromCharCode(...rxBuf.slice(0,6));
+      if (hdr !== '#HELLO') { log(`Unexpected header: ${hdr}`,'err'); rxMode=null; return; }
+      parseConfig(rxBuf.slice(6,518));
+      parseStatus(new TextDecoder().decode(rxBuf.slice(518)));
+      log(`Read OK — ${document.getElementById('sFirmware').textContent}  ${document.getElementById('sVoltage').textContent}`);
+      monFeedSys(`Config block received (${rxBuf.length} bytes)`);
+      rxMode=null; rxBuf=new Uint8Array(0);
+    } else {
+      log(`Receiving… ${rxBuf.length}/518+ bytes`);
+    }
+  } else if (rxMode === 'write') {
+    // Device sends 6 null bytes as ACK (confirmed from write pcap)
+    const isAck = rxBuf.length >= 6 && rxBuf.slice(0,6).every(b=>b===0);
+    const msg = isAck ? 'Write ACK — config saved to device ✓' : `Write response: ${rxBuf.length} bytes`;
+    log(msg);
+    monFeedSys(msg);
+    rxMode=null; rxBuf=new Uint8Array(0);
+  } else if (rxMode === 'beacon-test') {
+    // RF test: device sends 6 null bytes ACK then ASCII response text
+    // IS test: device sends ASCII response directly (no null-byte prefix)
+    // Strip any leading null bytes (RF ACK), then display remaining ASCII
+    let start = 0;
+    while (start < rxBuf.length && rxBuf[start] === 0) start++;
+    const textPart = rxBuf.slice(start);
+    if (textPart.length && beaconTestEl) {
+      beaconTestEl.textContent = new TextDecoder('utf-8',{fatal:false}).decode(textPart);
+      log('Beacon test response received');
+      monFeedBytes(textPart);
+    }
+    // Reset mode after brief idle — device sends no explicit end marker
+    clearTimeout(beaconTestTimer);
+    beaconTestTimer = setTimeout(() => {
+      rxMode=null; rxBuf=new Uint8Array(0);
+    }, 1500);
+  } else {
+    // Normal streaming mode — APRS packets from the device
+    log(`RX: ${new TextDecoder().decode(bytes).trim().substring(0,80)}`);
+    monFeedBytes(bytes);
+    rxBuf=new Uint8Array(0);
+  }
+}
+
+// ================================================================
+// CONFIG ACTIONS
+// ================================================================
+function doRead() {
+  if (!cfgWs||cfgWs.readyState!==1) { log('Not connected','err'); return; }
+  rxMode='read'; rxBuf=new Uint8Array(0);
+  cfgWs.send(HELLO); // 6 bytes only → device responds with config
+  log('Sent #HELLO — awaiting 512-byte config block…');
+}
+
+function doWrite() {
+  if (!cfgWs||cfgWs.readyState!==1) { log('Not connected','err'); return; }
+  if (!confirm('Write configuration to device?\nVerify all settings before proceeding.')) return;
+  const cfg = serializeConfig();
+  // CONFIRMED: Write = #HELLO (6 bytes) + 512-byte config = 518 bytes
+  const pkt = new Uint8Array(HELLO.length + cfg.length);
+  pkt.set(HELLO, 0); pkt.set(cfg, HELLO.length);
+  rxMode='write'; rxBuf=new Uint8Array(0);
+  cfgWs.send(pkt);
+  log(`Write: sent ${pkt.length} bytes (#HELLO + 512-byte config)`);
+}
+
+function doFactory() {
+  if (!cfgWs||cfgWs.readyState!==1) { log('Not connected','err'); return; }
+  if (!confirm('Factory reset? All settings will be lost!')) return;
+  cfgWs.send(new TextEncoder().encode(FACTORY_CMD));
+  log('Factory reset command sent');
+}
+
+function doReset() {
+  if (!cfgWs||cfgWs.readyState!==1) { log('Not connected','err'); return; }
+  if (!confirm('Reboot device?')) return;
+  cfgWs.send(new TextEncoder().encode(RESET_CMD));
+  log('Reset command sent');
+}
+
+// ================================================================
+// BEACON TEST ACTIONS
+// ================================================================
+function doBeaconTest(cmd, resultElId) {
+  if (!cfgWs||cfgWs.readyState!==1) { log('Not connected','err'); return; }
+  const el = document.getElementById(resultElId);
+  el.style.display = 'block';
+  el.textContent   = '…waiting for response…';
+  beaconTestEl  = el;
+  clearTimeout(beaconTestTimer);
+  rxMode = 'beacon-test'; rxBuf = new Uint8Array(0);
+  cfgWs.send(new TextEncoder().encode(cmd));
+  log(`Test sent: ${cmd}`);
+}
+function doGwIsTest() { doBeaconTest(GATE_IS_TEST_CMD, 'gwTestResult'); }
+function doGwRfTest() { doBeaconTest(GATE_RF_TEST_CMD, 'gwTestResult'); }
+function doWxIsTest() { doBeaconTest(WX_IS_TEST_CMD,   'wxTestResult'); }
+function doWxRfTest() { doBeaconTest(WX_RF_TEST_CMD,   'wxTestResult'); }
+
+// ================================================================
+// MONITOR TAB
+// ================================================================
+
+// Toggle whether incoming cfgWs data is logged to the monitor window
+function monToggleRecord() {
+  monRecording = !monRecording;
+  const btn = document.getElementById('btnRecord');
+  const stat = document.getElementById('mStatConn');
+  if (monRecording) {
+    btn.textContent = 'Stop';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.color       = 'var(--accent)';
+    stat.textContent = '● recording';
+    stat.style.color = 'var(--accent)';
+    monLineBuf = '';
+    monAppendLine('Recording started', 'sys', 'sys-line');
+  } else {
+    btn.textContent = 'Record';
+    btn.style.borderColor = '';
+    btn.style.color       = '';
+    stat.textContent = '● not recording';
+    stat.style.color = 'var(--muted)';
+    monAppendLine('Recording stopped', 'sys', 'sys-line');
+  }
+}
+
+// Called for config-layer events (connect, disconnect, read/write completions)
+function monFeedSys(msg) {
+  if (!monRecording) return;
+  monAppendLine(msg, 'sys', 'sys-line');
+}
+
+// Called with raw bytes from the cfgWs stream (normal APRS packet flow)
+function monFeedBytes(bytes) {
+  if (!monRecording) return;
+  monRxBytes += bytes.length;
+  document.getElementById('mStatRx').textContent =
+    monRxBytes < 1024 ? monRxBytes : (monRxBytes/1024).toFixed(1)+'K';
+
+  if (monShowHex) {
+    const hex   = [...bytes].map(b=>b.toString(16).padStart(2,'0')).join(' ');
+    const ascii = [...bytes].map(b=>(b>=32&&b<127)?String.fromCharCode(b):'.').join('');
+    monAppendLine(`${hex}  |${ascii}|`, 'rx', 'raw-hex');
+    return;
+  }
+
+  // Text stream — buffer and split on newlines
+  const text = new TextDecoder('utf-8',{fatal:false}).decode(bytes);
+  monLineBuf += text;
+  const parts = monLineBuf.split('\n');
+  monLineBuf = parts.pop(); // keep trailing partial line
+  for (const raw of parts) {
+    const line = raw.replace(/\r$/,'').trim();
+    if (!line) continue;
+    const filter = fld('monFilter').trim();
+    if (filter && !line.toLowerCase().includes(filter.toLowerCase())) continue;
+    monAppendLine(line, 'rx', classifyAprs(line));
+  }
+}
+
+function classifyAprs(line) {
+  if (line.startsWith('#'))            return 'sys-line';  // server comment
+  if (line.startsWith('logresp'))      return 'sys-line';  // login response
+  if (line.startsWith('user '))        return 'sys-line';  // login line
+  if (line.includes(':_'))             return 'aprs-wx';   // weather
+  if (line.includes('::'))             return 'aprs-msg';  // message
+  if (line.includes(':;'))             return 'aprs-obj';  // object
+  if (/:[!=/\\@`']/.test(line))        return 'aprs-pos';  // position
+  return 'aprs-pos'; // default
+}
+
+function monAppendLine(text, dir, cls) {
+  if (monPaused) return;
+  const stream = document.getElementById('mon-stream');
+  while (stream.children.length >= MON_MAX) stream.removeChild(stream.firstChild);
+
+  const now = new Date();
+  const ts  = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+  const row = document.createElement('div');
+  row.className = 'mon-line';
+  const arrow = dir==='tx' ? '▲' : dir==='rx' ? '▼' : '·';
+  row.innerHTML =
+    `<span class="mon-ts">${ts}</span>` +
+    `<span class="mon-dir ${dir}">${arrow}</span>` +
+    `<span class="mon-data ${cls}">${escHtml(text)}</span>`;
+  stream.appendChild(row);
+  monLines++;
+  document.getElementById('mStatLines').textContent = monLines;
+  stream.scrollTop = stream.scrollHeight;
+}
+
+function monClear() {
+  document.getElementById('mon-stream').innerHTML = '';
+  monLines=0; monRxBytes=0;
+  document.getElementById('mStatLines').textContent = '0';
+  document.getElementById('mStatRx').textContent    = '0';
+}
+
+// Re-filter all lines already in the window whenever the filter field changes
+function applyMonFilter() {
+  const filter = fld('monFilter').trim().toLowerCase();
+  document.querySelectorAll('#mon-stream .mon-line').forEach(row => {
+    const text = row.querySelector('.mon-data')?.textContent || '';
+    // System lines (·) are always shown regardless of filter
+    const isSys = row.querySelector('.mon-dir.sys') !== null;
+    row.style.display = (isSys || !filter || text.toLowerCase().includes(filter)) ? '' : 'none';
+  });
+}
+
+function monPause() {
+  monPaused = !monPaused;
+  const btn = document.getElementById('btnPause');
+  btn.textContent = monPaused ? 'Resume' : 'Pause';
+  btn.style.borderColor = monPaused ? 'var(--accent2)' : '';
+  btn.style.color       = monPaused ? 'var(--accent2)' : '';
+}
+
+function toggleHex() {
+  monShowHex = !monShowHex;
+  const btn = document.getElementById('btnHex');
+  btn.style.borderColor = monShowHex ? 'var(--accent)' : '';
+  btn.style.color       = monShowHex ? 'var(--accent)' : '';
+}
+
+// ================================================================
+// BRIDGE DOWNLOAD
+// ================================================================
+const bridgePySrc = `#!/usr/bin/env python3
+"""
+bridge.py — WebSocket → TCP bridge for 51TNC Config App
+========================================================
+
+Each WebSocket client connection gets a dedicated TCP connection to the TNC device.
+
+PROTOCOL:
+  1. HTML app connects to this bridge via WebSocket
+  2. First message from app must be "IP:PORT" (e.g. "192.168.0.120:60000")
+  3. Bridge opens TCP connection to that IP:PORT
+  4. All subsequent binary/text frames are forwarded bidirectionally
+
+USAGE:
+  pip install websockets
+  python3 bridge.py [--host HOST] [--port PORT]
+
+  HOST : bind address for WebSocket server (default: localhost)
+  PORT : WebSocket port (default: 8765)
+
+  Then open 51tnc_config.html and set Bridge URL to ws://localhost:8765
+"""
+
+import asyncio
+import socket
+import sys
+import argparse
+
+try:
+    import websockets
+    import websockets.server
+except ImportError:
+    print("ERROR: 'websockets' package not found.")
+    print("Install it with:  pip install websockets")
+    sys.exit(1)
+
+
+BRIDGE_HOST = "localhost"
+BRIDGE_PORT = 8765
+TCP_TIMEOUT  = 10          # seconds to establish TCP connection
+CHUNK_SIZE   = 4096
+
+
+async def handle_client(websocket):
+    """Bridge one WebSocket client to one TNC TCP connection."""
+    remote = websocket.remote_address
+    print(f"[WS ] Client connected from {remote}")
+
+    # ---- Step 1: receive target address ----
+    try:
+        first_msg = await asyncio.wait_for(websocket.recv(), timeout=10)
+    except asyncio.TimeoutError:
+        print(f"[WS ] {remote}: timeout waiting for target address — disconnecting")
+        return
+
+    if isinstance(first_msg, bytes):
+        first_msg = first_msg.decode("utf-8", errors="replace")
+    first_msg = first_msg.strip()
+
+    try:
+        if ":" not in first_msg:
+            raise ValueError("expected IP:PORT")
+        host, port_str = first_msg.rsplit(":", 1)
+        port = int(port_str)
+    except (ValueError, IndexError) as e:
+        print(f"[WS ] {remote}: bad target address '{first_msg}': {e}")
+        await websocket.close(1008, "Expected first message: IP:PORT")
+        return
+
+    print(f"[TCP] Connecting to {host}:{port} …")
+
+    # ---- Step 2: open TCP connection ----
+    loop = asyncio.get_event_loop()
+    try:
+        reader, writer = await asyncio.wait_for(
+            asyncio.open_connection(host, port),
+            timeout=TCP_TIMEOUT
+        )
+    except asyncio.TimeoutError:
+        print(f"[TCP] Timeout connecting to {host}:{port}")
+        await websocket.close(1011, f"TCP connect timeout to {host}:{port}")
+        return
+    except OSError as e:
+        print(f"[TCP] Connection failed: {e}")
+        await websocket.close(1011, f"TCP connect failed: {e}")
+        return
+
+    print(f"[TCP] Connected to {host}:{port}")
+
+    # ---- Step 3: bidirectional relay ----
+    tcp_closed = asyncio.Event()
+
+    async def tcp_to_ws():
+        """Read from TCP, write to WebSocket."""
+        try:
+            while True:
+                data = await asyncio.wait_for(reader.read(CHUNK_SIZE), timeout=30)
+                if not data:
+                    print(f"[TCP] Remote closed connection")
+                    break
+                print(f"[TCP→WS] {len(data)} bytes")
+                await websocket.send(data)
+        except asyncio.TimeoutError:
+            print(f"[TCP] Read timeout")
+        except Exception as e:
+            print(f"[TCP→WS] Error: {e}")
+        finally:
+            tcp_closed.set()
+
+    async def ws_to_tcp():
+        """Read from WebSocket, write to TCP."""
+        try:
+            async for msg in websocket:
+                data = msg if isinstance(msg, bytes) else msg.encode("utf-8")
+                print(f"[WS→TCP] {len(data)} bytes  hex={data[:16].hex()}")
+                writer.write(data)
+                await writer.drain()
+        except Exception as e:
+            print(f"[WS→TCP] Error: {e}")
+        finally:
+            tcp_closed.set()
+
+    try:
+        await asyncio.gather(tcp_to_ws(), ws_to_tcp())
+    finally:
+        writer.close()
+        try:
+            await writer.wait_closed()
+        except Exception:
+            pass
+        print(f"[WS ] Client {remote} disconnected")
+
+
+async def main(host, port):
+    print(f"51TNC WebSocket Bridge")
+    print(f"Listening on ws://{host}:{port}")
+    print(f"Point your browser app's Bridge URL to ws://{host}:{port}")
+    print(f"Press Ctrl+C to stop\\n")
+
+    async with websockets.server.serve(handle_client, host, port):
+        await asyncio.Future()   # run forever
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="WebSocket→TCP bridge for 51TNC Config App")
+    parser.add_argument("--host", default=BRIDGE_HOST, help=f"Bind host (default: {BRIDGE_HOST})")
+    parser.add_argument("--port", default=BRIDGE_PORT, type=int, help=f"WebSocket port (default: {BRIDGE_PORT})")
+    args = parser.parse_args()
+
+    try:
+        asyncio.run(main(args.host, args.port))
+    except KeyboardInterrupt:
+        print("\\nBridge stopped.")
+`;
+
+function downloadBridge() {
+  const blob = new Blob([bridgePySrc], {type: 'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'bridge.py';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function showBridgeHelp()  { document.getElementById('bridgeModal').classList.add('open'); }
+function closeBridgeHelp() { document.getElementById('bridgeModal').classList.remove('open'); }
+
+// ================================================================
+// INIT
+// ================================================================
+setRadio('srvRotate',0); setRadio('txLevel',0); setRadio('ttlFmt',0);
+setRadio('lcdType',0);   setRadio('gpsRate',0); setRadio('gpsMode',0);
+setRadio('gLatSign',1);  setRadio('gLonSign',0);
+</script>
+</body>
+</html>
