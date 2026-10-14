@@ -1189,12 +1189,14 @@ function doConnect() {
     saveRecentIp(fld('hDeviceIp'));
   };
   cfgWs.onclose = e => {
-    log(`Disconnected (${e.code})`, e.code!==1000?'err':'');
+    const why = e.code===1006
+      ? 'could not reach bridge — is bridge.py running, and did the browser allow local network access?'
+      : (e.reason || '');
+    log(`Disconnected (${e.code})${why ? ' — '+why : ''}`, e.code!==1000?'err':'');
     setCfgConnected(false);
     cfgWs=null; rxMode=null; rxBuf=new Uint8Array(0);
-    monFeedSys(`Disconnected (${e.code})`);
+    monFeedSys(`Disconnected (${e.code})${e.reason ? ' — '+e.reason : ''}`);
   };
-  cfgWs.onerror = () => log('Bridge error — is bridge.py running?','err');
   cfgWs.onmessage = ev => {
     const bytes = ev.data instanceof ArrayBuffer ? new Uint8Array(ev.data) : new TextEncoder().encode(ev.data);
     handleCfgRx(bytes);
